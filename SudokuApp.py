@@ -14,6 +14,21 @@ class App():
 		self.mode = "main"
 		self.running = True
 		self.selected_cell = None
+		self.locked_cells = []
+		self.testboard = [[0,6,0,2,0,0,8,3,1],
+             [0,0,0,0,8,4,0,0,0],
+             [0,0,7,6,0,3,0,4,9],
+             [0,4,6,8,0,2,1,0,0],
+             [0,0,3,0,9,6,0,0,0],
+             [1,2,0,7,0,5,0,0,6],
+             [7,3,0,0,0,1,0,2,0],
+             [8,1,5,0,2,9,7,0,0],
+             [0,0,0,0,7,0,0,1,5]]
+
+		for xidx,row in enumerate(self.testboard):
+			for yidx, num in enumerate(row):
+				if num!=0:
+					self.locked_cells.append((xidx, yidx))
 		self.selected_number = None
 		self.buttons = []
 		self.state = "playing"
@@ -35,7 +50,6 @@ class App():
 				self.settings_draw()
 			elif self.mode == "about":
 				self.about_draw()
-
 		pygame.quit()
 		sys.exit()
 
@@ -55,7 +69,14 @@ class App():
 							self.mode = button.text.lower()
 				elif self.mode == 'start':
 					self.selected_cell = self.get_cell()
-					self.selected_number = TESTBOARD[self.selected_cell[0]][self.selected_cell[1]]
+					if self.selected_cell:
+						self.selected_number = self.testboard[self.selected_cell[0]][self.selected_cell[1]]
+			elif event.type == pygame.KEYDOWN:
+				if self.mode == 'start':
+					if self.selected_cell != None and self.selected_cell not in self.locked_cells and event.unicode in list('123456789'):
+						self.testboard[self.selected_cell[0]][self.selected_cell[1]] = int(event.unicode)
+					if event.key == pygame.K_BACKSPACE and self.selected_cell and self.selected_cell not in self.locked_cells:
+						self.testboard[self.selected_cell[0]][self.selected_cell[1]] = 0
 
 #############   DRAW FUNCTIONS #############
 
@@ -73,20 +94,18 @@ class App():
 
 		if self.selected_cell:
 			self.highlight_cell()
-			
+		if self.selected_cell and self.selected_number:
+			self.highlight_num()
 		pygame.draw.rect(self.screen, BLACK, (BOARD_POS[0],BOARD_POS[1], BOARD_W, BOARD_H), 3)
 		for i in range(9):
 			pygame.draw.line(self.screen, BLACK,(BOARD_POS[0]+(i*CELL),BOARD_POS[1]),(BOARD_POS[0]+(i*CELL),BOARD_POS[1]+BOARD_H),3 if i%3==0 else 1)
 			pygame.draw.line(self.screen, BLACK,(BOARD_POS[0],BOARD_POS[1]+(i*CELL)),(BOARD_POS[0]+BOARD_W,BOARD_POS[1]+(i*CELL)), 3 if i%3==0 else 1)
 
-		for xidx,row in enumerate(TESTBOARD):
+		for xidx,row in enumerate(self.testboard):
 			for yidx, num in enumerate(row):
-				num_color = BLUE if num == self.selected_number else BLACK
-				num_bold = True if num == self.selected_number else False
-				num_font = pygame.font.SysFont('comicsansms', 34, num_bold)
 				if num!=0:
-					num_text = num_font.render(str(num), True, num_color)
-					self.text_to_screen(num_text, xidx, yidx)
+					self.text_to_screen(num, xidx, yidx)
+
 		pygame.display.update()
 
 	def scores_draw(self):
@@ -121,11 +140,15 @@ class App():
 		pygame.display.update()
 
 	def text_to_screen(self,n,x,y):
-		w = n.get_width()
-		h = n.get_height()
+		num_bold = True if n == self.selected_number else False
+		num_color = BLUE if n==self.selected_number else BLACK
+		num_font = pygame.font.SysFont('comicsansms', 34, num_bold)
+		num_text = num_font.render(str(n), True, num_color)
+		w = num_text.get_width()
+		h = num_text.get_height()
 		x = (CELL - w)//2 + BOARD_POS[0] + x*CELL
 		y = (CELL - h)//2 + BOARD_POS[1] + y*CELL
-		self.screen.blit(n, (x,y))
+		self.screen.blit(num_text, (x,y))
 
 #############   HELPER FUNCTIONS #############
 
@@ -168,7 +191,24 @@ class App():
 			cell_h -=2
 
 		pygame.draw.rect(self.screen,TEAL, (BOARD_POS[0]+self.selected_cell[0]*CELL, BOARD_POS[1]+self.selected_cell[1]*CELL,cell_w, cell_h))
+
+	def highlight_num(self):
+		cell_w = CELL
+		cell_h = CELL
+		same_num_cells = []
+		if self.selected_cell[0]==8:
+			cell_w -= 2
+		if self.selected_cell[1]==8:
+			cell_h -=2
+
+		for xidx, row in enumerate(self.testboard):
+			for yidx, num in enumerate(row):
+				if num==self.selected_number and num!=0:
+					same_num_cells.append((xidx,yidx))
 		
+		for x,y in same_num_cells:
+			pygame.draw.rect(self.screen, LTEAL, (BOARD_POS[0]+(x*CELL), BOARD_POS[1]+(y*CELL), cell_w, cell_h))
+
 
 	def get_cell(self):
 		# print(((self.mousePos[0]-BOARD_POS[0])//CELL, (self.mousePos[1]-BOARD_POS[1])//CELL))
