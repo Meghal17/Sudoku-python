@@ -14,6 +14,7 @@ class App():
 		self.mode = "main"
 		self.running = True
 		self.selected_cell = None
+		self.selected_number = None
 		self.buttons = []
 		self.state = "playing"
 		self.playingButtons = []
@@ -54,6 +55,7 @@ class App():
 							self.mode = button.text.lower()
 				elif self.mode == 'start':
 					self.selected_cell = self.get_cell()
+					self.selected_number = TESTBOARD[self.selected_cell[0]][self.selected_cell[1]]
 
 #############   DRAW FUNCTIONS #############
 
@@ -74,13 +76,17 @@ class App():
 			
 		pygame.draw.rect(self.screen, BLACK, (BOARD_POS[0],BOARD_POS[1], BOARD_W, BOARD_H), 3)
 		for i in range(9):
-			if i%3==0:
-				line_thickness = 3
-			else:
-				line_thickness = 1
-			pygame.draw.line(self.screen, BLACK,(BOARD_POS[0]+(i*CELL),BOARD_POS[1]),(BOARD_POS[0]+(i*CELL),BOARD_POS[1]+BOARD_H),line_thickness)
-			pygame.draw.line(self.screen, BLACK,(BOARD_POS[0],BOARD_POS[1]+(i*CELL)),(BOARD_POS[0]+BOARD_W,BOARD_POS[1]+(i*CELL)), line_thickness)
+			pygame.draw.line(self.screen, BLACK,(BOARD_POS[0]+(i*CELL),BOARD_POS[1]),(BOARD_POS[0]+(i*CELL),BOARD_POS[1]+BOARD_H),3 if i%3==0 else 1)
+			pygame.draw.line(self.screen, BLACK,(BOARD_POS[0],BOARD_POS[1]+(i*CELL)),(BOARD_POS[0]+BOARD_W,BOARD_POS[1]+(i*CELL)), 3 if i%3==0 else 1)
 
+		for xidx,row in enumerate(TESTBOARD):
+			for yidx, num in enumerate(row):
+				num_color = BLUE if num == self.selected_number else BLACK
+				num_bold = True if num == self.selected_number else False
+				num_font = pygame.font.SysFont('comicsansms', 34, num_bold)
+				if num!=0:
+					num_text = num_font.render(str(num), True, num_color)
+					self.text_to_screen(num_text, xidx, yidx)
 		pygame.display.update()
 
 	def scores_draw(self):
@@ -113,6 +119,13 @@ class App():
 		x,y = (WIDTH - w)//2, (HEIGHT - h)//2
 		self.screen.blit(about,(x,y))
 		pygame.display.update()
+
+	def text_to_screen(self,n,x,y):
+		w = n.get_width()
+		h = n.get_height()
+		x = (CELL - w)//2 + BOARD_POS[0] + x*CELL
+		y = (CELL - h)//2 + BOARD_POS[1] + y*CELL
+		self.screen.blit(n, (x,y))
 
 #############   HELPER FUNCTIONS #############
 
