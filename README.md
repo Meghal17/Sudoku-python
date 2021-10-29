@@ -1,7 +1,10 @@
 # Sudoku-python
 ## Sudoku game using pygame
 
-This is an ongoing project to develop an interactive sudoku game.
+This is an ongoing project to develop a sudoku game.
+What has been implemented so far:
+- Main Menu to navigate between the game and other sections like settings, scores, and others.
+- Sudoku board display funtion with highlight functionality for better gameplay experience.
 
 **Packages**
 
