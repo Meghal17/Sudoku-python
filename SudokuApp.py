@@ -7,14 +7,18 @@ class App():
 		pygame.init()
 		self.icon = pygame.image.load('Data/images/icon.png')
 		self.background = pygame.image.load('Data/images/title.jpg')
-		self.back = Button("<<",10,10,50,50, BLACK, "californianfb")
+
 		self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
 		pygame.display.set_caption('Sudoku')
 		pygame.display.set_icon(self.icon)
-		self.mode = "main"
+
+		self.back = Button("<<",10,10,50,50, BLACK, "californianfb")
+		self.notes_mode = False
+		self.mode = "menu"
 		self.running = True
 		self.selected_cell = None
 		self.locked_cells = []
+		self.notes = [ [[] for _ in range(9)] for _ in range(9) ]
 		self.testboard = [[0,6,0,2,0,0,8,3,1],
              [0,0,0,0,8,4,0,0,0],
              [0,0,7,6,0,3,0,4,9],
@@ -26,22 +30,21 @@ class App():
              [0,0,0,0,7,0,0,1,5]]
 
 		for xidx,row in enumerate(self.testboard):
-			for yidx, num in enumerate(row):
+			for yidx,num in enumerate(row):
 				if num!=0:
 					self.locked_cells.append((xidx, yidx))
 		self.selected_number = None
-		self.buttons = []
-		self.state = "playing"
-		self.playingButtons = []
-		self.menuButtons = []
-		self.loadMenuButtons()
+		self.gameButtons = self.loadButtons("start")
+		self.menuButtons = self.loadButtons("menu")
 
 	def run(self):
 		while self.running:
 			self.main_events()
-			self.main_update()
-			if self.mode == "main":
-				self.main_draw()
+			self.mousePos = pygame.mouse.get_pos()
+			if self.mode == "menu":
+				self.menu_draw()
+				for button in self.menuButtons:
+					button.update(self.mousePos)
 			elif self.mode == "start":
 				self.game_draw()
 			elif self.mode == "scores":
@@ -56,31 +59,54 @@ class App():
 #############   EVENTS FUNCTIONS #############
 
 	def main_events(self):
+		# print('mode:',self.mode)
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				self.running = False
 			if event.type == pygame.MOUSEBUTTONDOWN:
-				if self.mode != 'main' and self.check_collision(self.back):
-					self.mode = 'main'
+				if self.mode != 'menu' and self.check_collision(self.back):
+					self.mode = 'menu'
 
-				if self.mode=='main':
+				if self.mode =='menu':
 					for button in self.menuButtons:
-						if (self.mousePos[0]>=button.pos[0] and self.mousePos[0]<=button.pos[0]+button.size[0]) and (self.mousePos[1]>=button.pos[1] and self.mousePos[1]<=button.pos[1]+button.size[1]):
+						if self.check_collision(button):
 							self.mode = button.text.lower()
+
 				elif self.mode == 'start':
 					self.selected_cell = self.get_cell()
 					if self.selected_cell:
 						self.selected_number = self.testboard[self.selected_cell[0]][self.selected_cell[1]]
+					if self.check_collision(self.gameButtons[0]):
+						self.notes_mode = not(self.notes_mode)
+						if self.notes_mode:
+							self.gameButtons[0].button_color = LYELLOW
+						else:
+							self.gameButtons[0].button_color = YELLOW
+
 			elif event.type == pygame.KEYDOWN:
 				if self.mode == 'start':
 					if self.selected_cell != None and self.selected_cell not in self.locked_cells and event.unicode in list('123456789'):
-						self.testboard[self.selected_cell[0]][self.selected_cell[1]] = int(event.unicode)
+						if self.notes_mode:
+							#Write notes
+							self.testboard[self.selected_cell[0]][self.selected_cell[1]] = 0
+							if int(event.unicode) in self.notes[self.selected_cell[0]][self.selected_cell[1]]:
+								self.notes[self.selected_cell[0]][self.selected_cell[1]].remove(int(event.unicode))
+								self.selected_number = None
+							else:
+								self.notes[self.selected_cell[0]][self.selected_cell[1]].append(int(event.unicode))
+								self.selected_number = int(event.unicode)
+						else:
+							self.notes[self.selected_cell[0]][self.selected_cell[1]] = []
+							self.testboard[self.selected_cell[0]][self.selected_cell[1]] = int(event.unicode)
+							self.selected_number = int(event.unicode)
+
 					if event.key == pygame.K_BACKSPACE and self.selected_cell and self.selected_cell not in self.locked_cells:
 						self.testboard[self.selected_cell[0]][self.selected_cell[1]] = 0
+						self.selected_number = None
 
 #############   DRAW FUNCTIONS #############
 
-	def main_draw(self):
+	def menu_draw(self):
 		self.screen.blit(self.background, (0,0)) 
 		for button in self.menuButtons:
 			button.draw(self.screen)
@@ -89,23 +115,31 @@ class App():
 	def game_draw(self):
 		self.screen.fill(WHITE)
 		self.back.draw(self.screen, WHITE)
-		for button in self.playingButtons:
+		numbers = [1,2,3,4,5,6,7,8,9]
+		
+		for button in self.gameButtons:
 			button.draw(self.screen)
+
+		if self.selected_cell and self.selected_number:
+			self.highlight_num()
 
 		if self.selected_cell:
 			self.highlight_cell()
-		if self.selected_cell and self.selected_number:
-			self.highlight_num()
+		
 		pygame.draw.rect(self.screen, BLACK, (BOARD_POS[0],BOARD_POS[1], BOARD_W, BOARD_H), 3)
 		for i in range(9):
 			pygame.draw.line(self.screen, BLACK,(BOARD_POS[0]+(i*CELL),BOARD_POS[1]),(BOARD_POS[0]+(i*CELL),BOARD_POS[1]+BOARD_H),3 if i%3==0 else 1)
 			pygame.draw.line(self.screen, BLACK,(BOARD_POS[0],BOARD_POS[1]+(i*CELL)),(BOARD_POS[0]+BOARD_W,BOARD_POS[1]+(i*CELL)), 3 if i%3==0 else 1)
 
 		for xidx,row in enumerate(self.testboard):
-			for yidx, num in enumerate(row):
+			for yidx,num in enumerate(row):
 				if num!=0:
-					self.text_to_screen(num, xidx, yidx)
+					self.text_to_screen(num, xidx, yidx, NUM_FONT)
 
+		notes_font = pygame.font.SysFont("calibri",18,True)
+		for xidx, N in enumerate(self.notes):
+			for yidx, sub_N in enumerate(N):
+				self.notes_draw(sub_N, xidx, yidx, notes_font)
 		pygame.display.update()
 
 	def scores_draw(self):
@@ -139,16 +173,29 @@ class App():
 		self.screen.blit(about,(x,y))
 		pygame.display.update()
 
-	def text_to_screen(self,n,x,y):
+	def text_to_screen(self,n,x,y, font_size):
 		num_bold = True if n == self.selected_number else False
 		num_color = BLUE if n==self.selected_number else BLACK
-		num_font = pygame.font.SysFont('comicsansms', 34, num_bold)
+		num_font = pygame.font.SysFont('comicsansms', font_size, num_bold)
 		num_text = num_font.render(str(n), True, num_color)
 		w = num_text.get_width()
 		h = num_text.get_height()
 		x = (CELL - w)//2 + BOARD_POS[0] + x*CELL
 		y = (CELL - h)//2 + BOARD_POS[1] + y*CELL
 		self.screen.blit(num_text, (x,y))
+
+	def notes_draw(self, numbers, xidx, yidx, font):
+		for n in numbers:
+			N = font.render(str(n),True,BLACK)
+			w = N.get_width()
+			h = N.get_height()
+			x = BOARD_POS[0] + xidx*CELL
+			y = BOARD_POS[1] + yidx*CELL
+			x += ((n-1)%3)*(CELL//3)
+			y += ((n-1)//3)*(CELL//3)
+			x += (CELL/3 - w)//2
+			y += (CELL/3 - h)//2
+			self.screen.blit(N, (x,y))
 
 #############   HELPER FUNCTIONS #############
 
@@ -158,11 +205,6 @@ class App():
 		upper1 = self.mousePos[0] <= button.pos[0] + button.size[0]
 		upper2 = self.mousePos[1] <= button.pos[1] + button.size[1]
 		return (lower1 and lower2 and upper1 and upper2)
-
-	def main_update(self):
-		self.mousePos = pygame.mouse.get_pos()
-		for button in self.menuButtons:
-			button.update(self.mousePos)
 
 	def highlight_cell(self):
 		cell_w = CELL
@@ -185,21 +227,12 @@ class App():
 				CELL,
 				CELL*9))
 
-		if self.selected_cell[0]==8:
-			cell_w -= 2
-		if self.selected_cell[1]==8:
-			cell_h -=2
-
 		pygame.draw.rect(self.screen,TEAL, (BOARD_POS[0]+self.selected_cell[0]*CELL, BOARD_POS[1]+self.selected_cell[1]*CELL,cell_w, cell_h))
 
 	def highlight_num(self):
 		cell_w = CELL
 		cell_h = CELL
 		same_num_cells = []
-		if self.selected_cell[0]==8:
-			cell_w -= 2
-		if self.selected_cell[1]==8:
-			cell_h -=2
 
 		for xidx, row in enumerate(self.testboard):
 			for yidx, num in enumerate(row):
@@ -219,7 +252,14 @@ class App():
 		
 		return ((self.mousePos[0]-BOARD_POS[0])//CELL, (self.mousePos[1]-BOARD_POS[1])//CELL)
 
-	def loadMenuButtons(self):
-		for i in range(M_NUM):
-			button = Button(BUTTONS[i],M_TOP_LEFT[0],M_TOP_LEFT[1]+(M_SPACE+M_BL)*(i+1), M_BW, M_BL, button_color=M_COLOR, font="inkfree", bold=True)
-			self.menuButtons.append(button)
+	def loadButtons(self, key):
+		buttons = []
+		if key == "menu":
+			for i in range(len(BUTTONS["menu"])):
+				button = Button(BUTTONS["menu"][i],M_TOP_LEFT[0],M_TOP_LEFT[1]+(M_SPACE+M_BH)*(i+1), M_BW, M_BH, button_color=M_COLOR, font="inkfree", bold=True)
+				buttons.append(button)
+		elif key == "start":
+			for i in range(len(BUTTONS["start"])):
+				button = Button(BUTTONS["start"][i],S_X,S_Y,S_BW,S_BH, YELLOW, "inkfree", True)
+				buttons.append(button)
+		return buttons
