@@ -3,9 +3,10 @@
 
 This is an ongoing project to develop a sudoku game.
 What has been implemented so far:
-- Main Menu to navigate between the game and other sections like settings, scores, and others..
+- Main Menu to navigate between the game and other sections like settings, scores, and others.
 - Typing and deleting numbers on board.
 - Sudoku board display funtion with highlight functionality for better gameplay experience.
+- Notes functionality
 
 **Packages**
 
@@ -17,7 +18,7 @@ To start the game, run:
 python main.py
 ```
 
-To install pygame, type the following in command prompt:
+To install pygame, type the following in command prompt on windows:
 ```
 pip install pygame
 ```
