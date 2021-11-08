@@ -9,6 +9,7 @@ NUM_FONT = 34
 
 
 #COLORS
+RED = (160,0,0)
 WHITE = (255,255,255)
 BLACK = (0,0,0)
 GRAY = (10,10,10)
@@ -24,17 +25,23 @@ SETTINGS = (49, 84, 113)
 ABOUT = (70,70,70)
 
 #BUTTONS
-BUTTONS = {"menu":["Start","Scores","Settings","About"], "start": ["Notes"]}
+BUTTONS = {"menu":["Start","Scores","Settings","About"], "start": ["Notes"], "settings":["Difficulty"], "difficulty":["Easy","Medium","Hard","Evil"]}
 
-#Menu Button dimensions
-M_NUM = 4
+#Menu Button dimensions and locations
 M_BW = 250
 M_BH = 60
 M_TOP_LEFT = ((WIDTH - M_BW)//2,180)
 M_SPACE = 30
 M_COLOR = (120,10,50)
 
-#Start button dimensions
+#Settings button dimensions and locations
+SE_BW = 250
+SE_BH = 60
+SE_TOP_LEFT = ((WIDTH - SE_BW)//2,100)
+SE_SPACE = 30
+SE_COLOR = (204,157,0)
+
+#Start button dimensions and locations
 S_BW = 120
 S_BH = 50
 S_X, S_Y = 460,15
