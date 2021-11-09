@@ -136,11 +136,11 @@ class App():
 	def fetch_board(self):
 		board_path = "Data/boards"
 		n = random.randint(1,10000)
-		filename = os.path.join(board_path,self.difficulty,str(n)+'.csv')
+		filename = os.path.join(board_path,self.difficulty+'.csv')
 		with open(filename) as file:
-			data = file.read()
-			board_data = list(data.split()[1].split(',')[0])
-			sol_data = data.split()[1].split(',')[1]
+			for i in range(n+1):
+				data = file.readline()[:-1]
+			board_data, sol_data = data.split(',')
 		board = [[] for _ in range(9)]
 		solution = [[] for _ in range(9)]
 		for i in range(len(board_data)):
@@ -268,7 +268,9 @@ class App():
 			for event in pygame.event.get():
 				if event.type == pygame.KEYDOWN:
 					if event.key == pygame.K_BACKSPACE:
+						difficulty = self.difficulty
 						self.__init__()
+						self.difficulty = difficulty
 						self.run()
 			w = pygame.Surface((500,200))
 			w.set_alpha(10)
