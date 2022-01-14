@@ -6,7 +6,6 @@ import os, random, time
 class App():
 	def __init__(self):
 		pygame.init()
-		self.clock = pygame.time.Clock()
 		self.icon = pygame.image.load('Data/images/icon.png')
 		self.background = pygame.image.load('Data/images/title.jpg')
 
@@ -19,48 +18,67 @@ class App():
 		self.mode = "menu"
 		self.running = True
 		self.selected_cell = None
+		self.start_time = None
+		self.best_score_flag = False
 		self.locked_cells = []
+		self.game_elapsed_time = 0
+		self.mistakes = 0
+		self.game_score = 0
 		self.notes = [ [[] for _ in range(9)] for _ in range(9)]
-		self.difficulty = "easy"
+		with open('Data/difficulty.txt','r') as file:
+			self.difficulty = file.read()
+			if self.difficulty == '':
+				self.difficulty = "breezy"
 		self.board, self.solution = self.fetch_board()
 		self.finished = False
 		self.wrongs = [[False for _ in range(9)] for _ in range(9)]
-		for xidx,row in enumerate(self.board):
-			for yidx,num in enumerate(row):
-				if num!=0:
-					self.locked_cells.append([xidx, yidx])
 		self.selected_number = None
 		self.gameButtons = self.loadButtons("start")
 		self.menuButtons = self.loadButtons("menu")
-		self.settingsButton = self.loadButtons("settings")
 		self.difficultyButtons = self.loadButtons("difficulty")
+		self.gameRunning = False
+		
+
+		#debug
+		self.user_input = None
+		self.rcg_check = None
 
 	def run(self):
 		while self.running:
 			self.main_events()
 			self.mousePos = pygame.mouse.get_pos()
+			if self.mode != "start" and self.gameRunning:
+				self.gameRunning = False
+				self.game_elapsed_time += time.time() - self.start_time
 			if self.mode == "menu":
 				self.menu_draw()
 				for button in self.menuButtons:
 					button.update(self.mousePos)
 			elif self.mode == "start":
+				if not self.gameRunning:
+					self.gameRunning = True
+					self.start_time = time.time()
 				self.game_draw()
 				if self.selected_cell:
 					self.selected_number = self.board[self.selected_cell[0]][self.selected_cell[1]]
+				if self.notes_mode:
+					self.gameButtons[0].button_color = LYELLOW
+				else:
+					self.gameButtons[0].button_color = YELLOW
 				if self.filled():
+					self.game_elapsed_time += time.time() - self.start_time
+					self.get_score()
+					self.update_scores()
+					self.mistakes = 0
 					self.finish_draw()
 			elif self.mode == "scores":
 				self.scores_draw()
-			elif self.mode == "settings":
-				self.settings_draw()
-				for button in self.settingsButton:
+			elif self.mode == "difficulty":
+				self.difficulty_draw()
+				for button in self.difficultyButtons:
 					button.update(self.mousePos)
 			elif self.mode == "about":
 				self.about_draw()
-			elif self.mode == "difficulty":
-				self.settings_draw()
-				for button in self.difficultyButtons:
-					button.update(self.mousePos)
 		pygame.quit()
 		sys.exit()
 
@@ -69,6 +87,9 @@ class App():
 	def main_events(self):
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
+				with open('Data/difficulty.txt','w') as file:
+					file.truncate(0)
+					file.write(self.difficulty)
 				self.running = False
 			if event.type == pygame.MOUSEBUTTONDOWN:
 				if self.mode != "menu" and self.check_collision(self.back):
@@ -83,23 +104,17 @@ class App():
 					self.selected_cell = self.get_cell()
 					if self.check_collision(self.gameButtons[0]):
 						self.notes_mode = not(self.notes_mode)
-						if self.notes_mode:
-							self.gameButtons[0].button_color = LYELLOW
-						else:
-							self.gameButtons[0].button_color = YELLOW
-				elif self.mode == "settings":
-					for button in self.settingsButton:
-						if self.check_collision(button):
-							self.mode = button.text.lower()
 				elif self.mode == "difficulty":
 					for button in self.difficultyButtons:
 						if self.check_collision(button):
 							self.difficulty = button.text.lower()
 							self.board, self.solution = self.fetch_board()
-							self.mode = "settings"
-				
+							self.mode = "menu"
+
 			elif event.type == pygame.KEYDOWN:
 				if self.mode == 'start':
+					if event.key == pygame.K_n and self.selected_cell:
+						self.notes_mode = not(self.notes_mode)
 					if self.selected_cell != None:
 						if event.key == pygame.K_UP:
 							self.selected_cell[0] = max(0,self.selected_cell[0]-1)
@@ -108,24 +123,36 @@ class App():
 						elif event.key == pygame.K_RIGHT:
 							self.selected_cell[1] = min(8,self.selected_cell[1]+1)
 						elif event.key == pygame.K_DOWN:
-							self.selected_cell[0] = min(8, self.selected_cell[0]+1) 
-					if self.selected_cell != None and self.selected_cell not in self.locked_cells and event.unicode in list('123456789'):
+							self.selected_cell[0] = min(8, self.selected_cell[0]+1)
+
+					if self.selected_cell != None and (self.selected_cell not in self.locked_cells) and (event.unicode in list('123456789')):
+
+						# #Debug begin
+						# self.user_input = int(event.unicode)
+						# self.rcg_check = self.check_num_rcg(int(event.unicode), self.selected_cell)
+						# # debug end
+
 						if self.notes_mode:
 							self.board[self.selected_cell[0]][self.selected_cell[1]] = 0
 							if int(event.unicode) in self.notes[self.selected_cell[0]][self.selected_cell[1]]:
 								self.notes[self.selected_cell[0]][self.selected_cell[1]].remove(int(event.unicode))
 								self.selected_number = None
 							else:
-								self.notes[self.selected_cell[0]][self.selected_cell[1]].append(int(event.unicode))
-								self.selected_number = int(event.unicode)
+								if not self.check_num_rcg(int(event.unicode), self.selected_cell):
+									self.notes[self.selected_cell[0]][self.selected_cell[1]].append(int(event.unicode))
+									self.selected_number = int(event.unicode)
 						else:
-							self.notes[self.selected_cell[0]][self.selected_cell[1]] = []
-							self.board[self.selected_cell[0]][self.selected_cell[1]] = int(event.unicode)
-							self.selected_number = int(event.unicode)
-							if int(event.unicode) != self.solution[self.selected_cell[0]][self.selected_cell[1]]:
-								self.wrongs[self.selected_cell[0]][self.selected_cell[1]] = True
-							else:
-								self.wrongs[self.selected_cell[0]][self.selected_cell[1]] = False
+							if not self.check_num_rcg(int(event.unicode), self.selected_cell):
+								self.board[self.selected_cell[0]][self.selected_cell[1]] = int(event.unicode)
+								self.selected_number = int(event.unicode)
+								self.notes[self.selected_cell[0]][self.selected_cell[1]] = []
+
+								if int(event.unicode) != self.solution[self.selected_cell[0]][self.selected_cell[1]]:
+									self.wrongs[self.selected_cell[0]][self.selected_cell[1]] = True
+									self.mistakes += 1
+								else:									
+									self.locked_cells.append([self.selected_cell[0],self.selected_cell[1]])
+									self.wrongs[self.selected_cell[0]][self.selected_cell[1]] = False
 
 					if event.key == pygame.K_BACKSPACE and self.selected_cell and self.selected_cell not in self.locked_cells and not(self.notes_mode):
 						self.board[self.selected_cell[0]][self.selected_cell[1]] = 0
@@ -146,6 +173,11 @@ class App():
 		for i in range(len(board_data)):
 			board[i//9].append(int(board_data[i]))
 			solution[i//9].append(int(sol_data[i]))
+		self.locked_cells = []
+		for xidx,row in enumerate(board):
+			for yidx,num in enumerate(row):
+				if num!=0:
+					self.locked_cells.append([xidx, yidx])
 		return board, solution
 
 #############   DRAW FUNCTIONS #############
@@ -184,44 +216,69 @@ class App():
 		for xidx, N in enumerate(self.notes):
 			for yidx, sub_N in enumerate(N):
 				self.notes_draw(sub_N, xidx, yidx, notes_font)
+
+		# # Debug draw
+		# font = pygame.font.SysFont('Calibri', 30, bold=True)
+		# t1 = font.render('Selected Cell: {}'.format(self.selected_cell), True, BLACK)
+		# t2 = font.render('Selected cell is locked cell: {}'.format(self.selected_cell in self.locked_cells), True, BLACK)
+		# t3 = font.render('User input: {}'.format(self.user_input), True, BLACK)
+		# t4 = font.render('RCG Check: {}'.format(self.rcg_check), True, BLACK)
+		# if self.selected_cell:
+		# 	cell_value = self.board[self.selected_cell[0]][self.selected_cell[1]]
+		# else:
+		# 	cell_value = None
+		# t5 = font.render('Cell Value: {}'.format(cell_value), True, BLACK)
+		# self.screen.blit(t1, (25, 730))
+		# self.screen.blit(t5, (25,760))
+		# self.screen.blit(t2, (25, 790))
+		# self.screen.blit(t3, (25, 820))
+		# self.screen.blit(t4, (25, 850))
 		pygame.display.update()
 
 	def scores_draw(self):
 		self.screen.fill(SCORES)
 		self.back.draw(self.screen, SCORES)
-		font = pygame.font.SysFont("calibri",50, bold=True)
-		scores = font.render("SCORES HERE!", True, BLACK)
-		w = scores.get_width()
+		font = pygame.font.SysFont("calibri",42, bold=True)
+		text = font.render("SCORES", True, BLACK)
+		w = text.get_width()
 		x,y = (WIDTH - w)//2, 30
-		self.screen.blit(scores, (x,y))
+		self.screen.blit(text, (x,y))
+
+		font1 = pygame.font.SysFont("calibri", 38, bold=True)
+		text1 = font1.render("Difficulty", True, BLACK)
+		text2 = font1.render("Average", True, BLACK)
+		text3 = font1.render("Best",True, BLACK)
+		self.screen.blit(text1, (50,120))
+		self.screen.blit(text2, (250,120))
+		self.screen.blit(text3, (450,120))
+		with open('Data/scores.txt') as file:
+			scores = file.read().splitlines()
+		font2 = pygame.font.SysFont("calibri", 34, False)
+		difficulty = ["Breezy","Easy","Medium","Hard","Evil"]
+		for i in range(5):
+			level = font2.render(difficulty[i],True,BLACK)
+			average = font2.render(scores[i].split(' ')[0],True,BLACK)
+			best = font2.render(scores[i].split(' ')[2], True,BLACK)
+			self.screen.blit(level, (50,120 + ((i+1)*80)))
+			self.screen.blit(average, (250, 120 + ((i+1)*80)))
+			self.screen.blit(best	, (450, 120 + ((i+1)*80)))
 		pygame.display.update()
 
-	def settings_draw(self):
-		if self.mode == "settings":
-			self.screen.fill(SETTINGS)
-			self.back.draw(self.screen, SETTINGS)
-			font = pygame.font.SysFont("calibri", 50, bold=True)
-			settings = font.render("SETTINGS",True,BLACK)
-			w = settings.get_width()
-			x, y = (WIDTH - w)//2, 30
-			font2 = pygame.font.SysFont("inkfree", 20, bold=True)
-			level = font2.render("Current difficulty: {}".format(self.difficulty), True, BLACK)
-			w2 = level.get_width()
-			x2, y2 = (WIDTH - w2)//2, 165
-			self.screen.blit(settings,(x,y))
-			self.screen.blit(level, (x2,y2))
-			for button in self.settingsButton:
-				button.draw(self.screen)
-		elif self.mode == "difficulty":
-			self.screen.fill(SETTINGS)
-			font = pygame.font.SysFont("calibri", 50, bold=True)
-			settings = font.render("DIFFICULTY",True,BLACK)
-			w = settings.get_width()
-			x, y = (WIDTH - w)//2, 30
-			self.screen.blit(settings,(x,y))
-			self.back.draw(self.screen, SETTINGS)
-			for button in self.difficultyButtons:
-				button.draw(self.screen)
+	def difficulty_draw(self):
+		self.screen.fill(DIFF)
+		font2 = pygame.font.SysFont("calibri", 28, bold=True)
+		level = font2.render("Current: {}".format(self.difficulty), True, BLACK)
+		w2 = level.get_width()
+		x2, y2 = (WIDTH - w2)//2, 150
+		self.screen.blit(level, (x2,y2))
+		font = pygame.font.SysFont("calibri", 50, bold=True)
+		difficulty = font.render("DIFFICULTY",True,BLACK)
+		w = difficulty.get_width()
+		x, y = (WIDTH - w)//2, 30
+		self.screen.blit(difficulty,(x,y))
+		self.back.draw(self.screen, DIFF)
+		for button in self.difficultyButtons:
+			button.draw(self.screen, selected=button.text.lower()==self.difficulty)
 		pygame.display.update()
 
 	def about_draw(self):
@@ -261,7 +318,6 @@ class App():
 			xi += (CELL/3 - w)//2
 			yi += (CELL/3 - h)//2
 			self.screen.blit(N, (xi,yi))
-		pygame.display.update()
 
 	def finish_draw(self):
 		while True:
@@ -276,9 +332,15 @@ class App():
 			w.set_alpha(10)
 			w.fill((128,128,128))
 			self.screen.blit(w, (50,250))
-			font1 = pygame.font.SysFont('Calibri',40,bold=True)
+			if self.best_score_flag:
+				font = pygame.font.SysFont('Calibri',36, bold=True)
+				text = font.render('New Best Score!',True, BLACK)
+				w,h = text.get_width(), text.get_height()
+				x,y = (WIDTH - w)//2, (HEIGHT - h)//2 - 40
+				self.screen.blit(text, (x,y))
+			font1 = pygame.font.SysFont('Calibri',34,bold=True)
 			font2 = pygame.font.SysFont('inkfree',20)
-			t1 = font1.render('Sudoku Finished!', True, BLACK)
+			t1 = font1.render('Sudoku Finished! Score:{}'.format(self.game_score), True, BLACK)
 			t2 = font2.render('Press Backspace to return',True,BLACK)
 			w1 = t1.get_width()
 			h1 = t2.get_height()
@@ -337,6 +399,7 @@ class App():
 
 
 	def get_cell(self):
+		# print([(self.mousePos[1]-BOARD_POS[1])//CELL, (self.mousePos[0]-BOARD_POS[0])//CELL])
 		if self.mousePos[0] < BOARD_POS[0] or self.mousePos[1] < BOARD_POS[1]:
 			return False
 		if self.mousePos[0] > BOARD_POS[0]+BOARD_W or self.mousePos[1] > BOARD_POS[1] + BOARD_H:
@@ -354,10 +417,6 @@ class App():
 			for i in range(len(BUTTONS["start"])):
 				button = Button(BUTTONS["start"][i],S_X,S_Y,S_BW,S_BH, YELLOW, "inkfree", True)
 				buttons.append(button)
-		elif key == "settings":
-			for i in range(len(BUTTONS["settings"])):
-				button = Button(BUTTONS["settings"][i], SE_TOP_LEFT[0], SE_TOP_LEFT[1], SE_BW, SE_BH, SE_COLOR, "inkfree", True)
-				buttons.append(button)
 		elif key == "difficulty":
 			for i in range(len(BUTTONS["difficulty"])):
 				button = Button(BUTTONS["difficulty"][i], SE_TOP_LEFT[0], SE_TOP_LEFT[1]+(SE_SPACE+SE_BH)*(i+1), SE_BW, SE_BH, SE_COLOR, "inkfree", True)
@@ -371,9 +430,43 @@ class App():
 			for b in B:
 				if b==0:
 					filled = False
-		
+
 		for i in range(9):
 			for j in range(9):
 				if self.wrongs[i][j] == True:
 					correct = False
 		return (filled and correct)
+
+	def check_num_rcg(self, n, cell):
+		xidx, yidx = cell
+		for i in range(9):
+			if self.board[xidx][i] == n:
+				return True
+			if self.board[i][yidx] == n:
+				return True
+
+		for i in range((xidx//3)*3, (xidx//3+1)*3):
+			for j in range((yidx//3)*3, (yidx//3+1)*3):
+				if self.board[i][j] == n:
+					return True
+		return False
+
+	def get_score(self):
+		self.game_score = round((BASE[self.difficulty] - self.mistakes * PEN[self.difficulty] + max(0, (PAR_TIME[self.difficulty] - self.game_elapsed_time))),2)
+
+	def update_scores(self):
+		diff_map = {"breezy":0,"easy":1,"medium":2,"hard":3,"evil":4}
+		with open('Data/scores.txt',"r+") as file:
+			scores = file.read().split('\n')
+			idx = diff_map[self.difficulty]
+			avg_score, num_games, best_score = map(float, scores[idx].split(' '))
+			if self.game_score > best_score:
+				best_score = self.game_score
+				self.best_score_flag = True
+			num_games += 1
+			new_avg_score = round(((avg_score*(num_games-1) + self.game_score)/num_games), 2)
+			scores[idx] = str(new_avg_score) +' '+str(num_games) +' ' + str(best_score)
+			file.seek(0)
+			file.truncate(0)
+			scores = '\n'.join(scores)
+			file.write(scores)

@@ -20,14 +20,14 @@ class Button():
 		else:
 			self.highlighted = False
 
-
-	def draw(self, window, text_color=BLACK):
+	def draw(self, window, text_color=BLACK, selected=False):
 		font = self.font.render(self.text, False, text_color)
 		font_h = font.get_height()
 		font_w = font.get_width()
 		color = self.hColor if self.highlighted else self.button_color
+		border_color = WHITE if selected else GRAY
 		pygame.draw.rect(window, color,(self.pos, self.size), border_radius=4)
-		pygame.draw.rect(window, GRAY, (self.pos, self.size),5, border_radius=4)
+		pygame.draw.rect(window, border_color, (self.pos, self.size),5, border_radius=4)
 		font_x = self.pos[0] + (self.size[0] - font_w)//2
 		font_y = self.pos[1] + (self.size[1] - font_h)//2
 		window.blit(font,(font_x, font_y))
