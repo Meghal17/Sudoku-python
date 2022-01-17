@@ -1,7 +1,8 @@
 # Sudoku-python
 ## Sudoku game using pygame
 
-This is an ongoing project to develop a sudoku game.
+This is my attempt to create a Sudoku Game using Python. 
+![alt text](https://github.com/[Meghal17]/[Sudoku-python]/blob/[main]/ss1.jpg?raw=true)
 
 **Packages**
 
