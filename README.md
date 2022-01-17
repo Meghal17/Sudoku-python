@@ -4,12 +4,6 @@
 Hi this is a Sudoku game I built using python from scratch.  
 
 
-![Alt text](Data/images/ss1.png?raw=true "Title")
-
-![Alt text](Data/images/ss3.png?raw=true "Title")
-
-![Alt text](Data/images/ss4.png?raw=true "Title")
-
 **Packages**
 
 - pygame
