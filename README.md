@@ -2,7 +2,12 @@
 ## Sudoku game using pygame
 
 This is my attempt to create a Sudoku Game using Python. 
+
+
 ![Alt text](Data/images/ss1.png?raw=true "Title")
+![Alt text](Data/images/ss2.png?raw=true "Title")
+![Alt text](Data/images/ss3.png?raw=true "Title")
+![Alt text](Data/images/ss4.png?raw=true "Title")
 
 **Packages**
 
