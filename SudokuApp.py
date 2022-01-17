@@ -8,7 +8,6 @@ class App():
 		pygame.init()
 		self.icon = pygame.image.load('Data/images/icon.png')
 		self.background = pygame.image.load('Data/images/title.jpg')
-
 		self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
 		pygame.display.set_caption('Sudoku')
 		pygame.display.set_icon(self.icon)
@@ -36,12 +35,8 @@ class App():
 		self.gameButtons = self.loadButtons("start")
 		self.menuButtons = self.loadButtons("menu")
 		self.difficultyButtons = self.loadButtons("difficulty")
+		self.scoreButtons = self.loadButtons("scores")
 		self.gameRunning = False
-		
-
-		#debug
-		self.user_input = None
-		self.rcg_check = None
 
 	def run(self):
 		while self.running:
@@ -71,14 +66,16 @@ class App():
 					self.update_scores()
 					self.mistakes = 0
 					self.finish_draw()
-			elif self.mode == "scores":
+			elif self.mode == "scores" or self.mode == "scoring":
 				self.scores_draw()
+				for button in self.scoreButtons:
+					button.update(self.mousePos)
 			elif self.mode == "difficulty":
 				self.difficulty_draw()
 				for button in self.difficultyButtons:
 					button.update(self.mousePos)
-			elif self.mode == "about":
-				self.about_draw()
+			elif self.mode == "help":
+				self.help_draw()
 		pygame.quit()
 		sys.exit()
 
@@ -92,11 +89,17 @@ class App():
 					file.write(self.difficulty)
 				self.running = False
 			if event.type == pygame.MOUSEBUTTONDOWN:
-				if self.mode != "menu" and self.check_collision(self.back):
+				if self.mode == "scoring" and self.check_collision(self.back):
+					self.mode = "scores"
+				elif self.mode != "menu" and self.check_collision(self.back):
 					self.mode = "menu"
 
 				if self.mode =="menu":
 					for button in self.menuButtons:
+						if self.check_collision(button):
+							self.mode = button.text.lower()
+				elif self.mode == "scores":
+					for button in self.scoreButtons:
 						if self.check_collision(button):
 							self.mode = button.text.lower()
 
@@ -109,6 +112,7 @@ class App():
 						if self.check_collision(button):
 							self.difficulty = button.text.lower()
 							self.board, self.solution = self.fetch_board()
+							self.notes = [ [[] for _ in range(9)] for _ in range(9)]
 							self.mode = "menu"
 
 			elif event.type == pygame.KEYDOWN:
@@ -126,11 +130,6 @@ class App():
 							self.selected_cell[0] = min(8, self.selected_cell[0]+1)
 
 					if self.selected_cell != None and (self.selected_cell not in self.locked_cells) and (event.unicode in list('123456789')):
-
-						# #Debug begin
-						# self.user_input = int(event.unicode)
-						# self.rcg_check = self.check_num_rcg(int(event.unicode), self.selected_cell)
-						# # debug end
 
 						if self.notes_mode:
 							self.board[self.selected_cell[0]][self.selected_cell[1]] = 0
@@ -216,52 +215,67 @@ class App():
 		for xidx, N in enumerate(self.notes):
 			for yidx, sub_N in enumerate(N):
 				self.notes_draw(sub_N, xidx, yidx, notes_font)
-
-		# # Debug draw
-		# font = pygame.font.SysFont('Calibri', 30, bold=True)
-		# t1 = font.render('Selected Cell: {}'.format(self.selected_cell), True, BLACK)
-		# t2 = font.render('Selected cell is locked cell: {}'.format(self.selected_cell in self.locked_cells), True, BLACK)
-		# t3 = font.render('User input: {}'.format(self.user_input), True, BLACK)
-		# t4 = font.render('RCG Check: {}'.format(self.rcg_check), True, BLACK)
-		# if self.selected_cell:
-		# 	cell_value = self.board[self.selected_cell[0]][self.selected_cell[1]]
-		# else:
-		# 	cell_value = None
-		# t5 = font.render('Cell Value: {}'.format(cell_value), True, BLACK)
-		# self.screen.blit(t1, (25, 730))
-		# self.screen.blit(t5, (25,760))
-		# self.screen.blit(t2, (25, 790))
-		# self.screen.blit(t3, (25, 820))
-		# self.screen.blit(t4, (25, 850))
 		pygame.display.update()
 
 	def scores_draw(self):
 		self.screen.fill(SCORES)
 		self.back.draw(self.screen, SCORES)
 		font = pygame.font.SysFont("calibri",42, bold=True)
-		text = font.render("SCORES", True, BLACK)
-		w = text.get_width()
-		x,y = (WIDTH - w)//2, 30
-		self.screen.blit(text, (x,y))
+		if self.mode == "scores":
+			for button in self.scoreButtons:
+				button.draw(self.screen)
+			text = font.render("SCORES", True, BLACK)
+			w = text.get_width()
+			x,y = (WIDTH - w)//2, 30
+			self.screen.blit(text, (x,y))
 
-		font1 = pygame.font.SysFont("calibri", 38, bold=True)
-		text1 = font1.render("Difficulty", True, BLACK)
-		text2 = font1.render("Average", True, BLACK)
-		text3 = font1.render("Best",True, BLACK)
-		self.screen.blit(text1, (50,120))
-		self.screen.blit(text2, (250,120))
-		self.screen.blit(text3, (450,120))
-		with open('Data/scores.txt') as file:
-			scores = file.read().splitlines()
-		font2 = pygame.font.SysFont("calibri", 34, False)
-		difficulty = ["Breezy","Easy","Medium","Hard","Evil"]
-		for i in range(5):
-			level = font2.render(difficulty[i],True,BLACK)
-			average = font2.render(scores[i].split(' ')[0],True,BLACK)
-			best = font2.render(scores[i].split(' ')[2], True,BLACK)
-			self.screen.blit(level, (50,120 + ((i+1)*80)))
-			self.screen.blit(average, (250, 120 + ((i+1)*80)))
-			self.screen.blit(best	, (450, 120 + ((i+1)*80)))
+			font1 = pygame.font.SysFont("calibri", 38, bold=True)
+			text1 = font1.render("Difficulty", True, BLACK)
+			text2 = font1.render("Average", True, BLACK)
+			text3 = font1.render("Best",True, BLACK)
+			self.screen.blit(text1, (50,120))
+			self.screen.blit(text2, (250,120))
+			self.screen.blit(text3, (450,120))
+			with open('Data/scores.txt') as file:
+				scores = file.read().splitlines()
+			font2 = pygame.font.SysFont("calibri", 34, False)
+			difficulty = ["Breezy","Easy","Medium","Hard","Evil"]
+			for i in range(5):
+				level = font2.render(difficulty[i],True,BLACK)
+				average = font2.render(scores[i].split(' ')[0],True,BLACK)
+				best = font2.render(scores[i].split(' ')[2], True,BLACK)
+				self.screen.blit(level, (50,120 + ((i+1)*80)))
+				self.screen.blit(average, (250, 120 + ((i+1)*80)))
+				self.screen.blit(best	, (450, 120 + ((i+1)*80)))
+
+		elif self.mode == "scoring":
+			text = font.render("SCORING RULES", True, BLACK)
+			w,h = text.get_width(), text.get_height()
+			x,y = (WIDTH-w)//2, 50
+			self.screen.blit(text, (x,y))
+			font1 = pygame.font.SysFont('Calibri',22, bold=True)
+			text1 = ["Each difficulty level has an associated par time. Completing","a puzzle under par time rewards you with 1 bonus point for","each second.","","Additionally there's a base score for each difficulty level.","However, penalty points will be deducted for each mistake.","","Mistake: Entering an incorrect number in a cell."]
+			for i in range(len(text1)):
+				t = font1.render(text1[i],True, BLACK)
+				self.screen.blit(t, (25,100+(i*25)))
+			font2 = pygame.font.SysFont('Calibri',24,bold = True)
+			header = ["Difficulty","Par Time","Base Score","Penalty"]
+			for i in range(len(header)):
+				text =  font2.render(header[i],True,BLACK)
+				self.screen.blit(text,(50+(i*150),350))
+			difficulty = ["Breezy","Easy","Medium","Hard","Evil"]
+			par_times = ["300","600","900","1200","1500"]
+			base_scores = ["100","200","300","400","500"]
+			penalties = ["25","50","75","100","125"]
+			for i in range(5):
+				level = font1.render(difficulty[i], True, BLACK)
+				par = font1.render(par_times[i], True, BLACK)
+				base = font1.render(base_scores[i], True, BLACK)
+				pen = font1.render(penalties[i], True, BLACK)
+				self.screen.blit(level,(50,400+(i*35)))
+				self.screen.blit(par, (200,400+(i*35)))
+				self.screen.blit(base, (350,400+(i*35)))
+				self.screen.blit(pen, (500,400+(i*35)))
 		pygame.display.update()
 
 	def difficulty_draw(self):
@@ -281,15 +295,21 @@ class App():
 			button.draw(self.screen, selected=button.text.lower()==self.difficulty)
 		pygame.display.update()
 
-	def about_draw(self):
-		self.screen.blit(self.background,(0,0))
-		self.back.draw(self.screen, ABOUT)
-		font = pygame.font.SysFont("calibri", 30, bold=True)
-		about = font.render("Developed by: Meghal Darji", True, BLACK)
-		w = about.get_width()
-		h = about.get_height()
-		x,y = (WIDTH - w)//2, (HEIGHT - h)//2
-		self.screen.blit(about,(x,y))
+	def help_draw(self):
+		self.screen.fill(HELP)
+		self.back.draw(self.screen, HELP)
+		font = pygame.font.SysFont("calibri", 50, bold=True)
+		font1 = pygame.font.SysFont("calibri", 34, bold=True)
+		text1 = font.render("How to Play?", True, BLACK)
+		self.screen.blit(text1, ((WIDTH - text1.get_width())//2,30))
+		font2 = pygame.font.SysFont("Calibri",24,bold=True)
+		ins = ["The objective of Sudoku game is to fill each empty cell","of a 9x9 grid with a number such that each row, each","column and each 3x3 block contains all digits from", "1 to 9 only once.","","The numbers already present on the board cannot be", "changed. There is only one correct solution to each", "Sudoku puzzle","","For scoring rules refer to \"Scoring\" section in Scores.","","Use mouse or arrow-keys to change cells."]
+		for i in range(len(ins)):
+				text =  font2.render(ins[i],True,BLACK)
+				self.screen.blit(text,(30,170+(i*25)))
+
+		dev = font1.render('Developed by: Meghal Darji', True, BLACK)
+		self.screen.blit(dev,((WIDTH - dev.get_width())//2,550))
 		pygame.display.update()
 
 	def text_to_screen(self,n,x,y, font_size):
@@ -415,11 +435,15 @@ class App():
 				buttons.append(button)
 		elif key == "start":
 			for i in range(len(BUTTONS["start"])):
-				button = Button(BUTTONS["start"][i],S_X,S_Y,S_BW,S_BH, YELLOW, "inkfree", True)
+				button = Button(BUTTONS["start"][i],S_X,S_Y,S_BW,S_BH, YELLOW, "mvboli", True)
 				buttons.append(button)
 		elif key == "difficulty":
 			for i in range(len(BUTTONS["difficulty"])):
 				button = Button(BUTTONS["difficulty"][i], SE_TOP_LEFT[0], SE_TOP_LEFT[1]+(SE_SPACE+SE_BH)*(i+1), SE_BW, SE_BH, SE_COLOR, "inkfree", True)
+				buttons.append(button)
+		elif key == "scores":
+			for i in range(len(BUTTONS["scores"])):
+				button = Button(BUTTONS['scores'][i], (WIDTH - 200)//2,600, 200, 50, YELLOW, "inkfree", True)
 				buttons.append(button)
 		return buttons
 

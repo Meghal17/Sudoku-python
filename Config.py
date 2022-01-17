@@ -23,10 +23,10 @@ LTEAL = tuple(min(T+40,255) for T in TEAL)
 LLTEAL = tuple(min(T+70,255) for T in TEAL)
 SCORES = (119, 91, 88)
 DIFF = (49, 84, 113)
-ABOUT = (70,70,70)
+HELP = (140,174,70)
 
 #BUTTONS
-BUTTONS = {"menu":["Start","Scores","Difficulty","About"], "start": ["Notes"],  "difficulty":["Breezy","Easy","Medium","Hard","Evil"]}
+BUTTONS = {"menu":["Start","Scores","Difficulty","Help"], "start": ["Notes"],  "difficulty":["Breezy","Easy","Medium","Hard","Evil"],"scores":["Scoring"]}
 
 #Menu Button dimensions and locations
 M_BW = 250
