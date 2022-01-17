@@ -2,7 +2,7 @@
 ## Sudoku game using pygame
 
 This is my attempt to create a Sudoku Game using Python. 
-![alt text](https://github.com/[Meghal17]/[Sudoku-python]/blob/[main]/ss1.jpg?raw=true)
+![alt text](https://github.com/[Meghal17]/[Sudoku-python]/blob/[main]/Data/images/ss1.jpg?raw=true)
 
 **Packages**
 
