@@ -5,6 +5,12 @@ This is a Sudoku game I built using Python and Pygame from scratch. Attached bel
 
 ![Alt text](Data/images/ss1.png?raw=true "Title")
 
+![Alt text](Data/images/ss2.png?raw=true "Title")
+
+![Alt text](Data/images/ss3.png?raw=true "Title")
+
+![Alt text](Data/images/ss4.png?raw=true "Title")
+
 **Packages**
 
 - pygame
