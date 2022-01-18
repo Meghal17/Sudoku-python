@@ -1,7 +1,9 @@
 # Sudoku-python
 ## Sudoku game using pygame
 
-Hi this is a Sudoku game I built using python from scratch.  
+This is a Sudoku game I built using Python and Pygame from scratch. Attached below are some screenshots of the game:
+
+![Alt text](Data/images/ss1.png?raw=true "Title")
 
 
 **Packages**
