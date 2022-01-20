@@ -303,13 +303,13 @@ class App():
 		text1 = font.render("How to Play?", True, BLACK)
 		self.screen.blit(text1, ((WIDTH - text1.get_width())//2,30))
 		font2 = pygame.font.SysFont("Calibri",24,bold=True)
-		ins = ["The objective of Sudoku game is to fill each empty cell","of a 9x9 grid with a number such that each row, each","column and each 3x3 block contains all digits from", "1 to 9 only once.","","The numbers already present on the board cannot be", "changed. There is only one correct solution to each", "Sudoku puzzle","","For scoring rules refer to \"Scoring\" section in Scores.","","Use mouse or arrow-keys to change cells."]
+		ins = ["The objective of Sudoku game is to fill each empty cell","of a 9x9 grid with a number such that each row, each","column and each 3x3 block contains all digits from", "1 to 9 only once.","","The numbers already present on the board cannot be", "changed. There is only one correct solution to each", "Sudoku puzzle","","For scoring rules refer to \"Scoring\" section in Scores.","","Use mouse or arrow-keys to change cells.","","Notes mode allows entering multiple possible entries","in a cell without getting a penalty."]
 		for i in range(len(ins)):
 				text =  font2.render(ins[i],True,BLACK)
 				self.screen.blit(text,(30,170+(i*25)))
 
 		dev = font1.render('Developed by: Meghal Darji', True, BLACK)
-		self.screen.blit(dev,((WIDTH - dev.get_width())//2,550))
+		self.screen.blit(dev,((WIDTH - dev.get_width())//2,570))
 		pygame.display.update()
 
 	def text_to_screen(self,n,x,y, font_size):
